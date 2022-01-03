@@ -16,7 +16,8 @@ contract Lottery {
         // Todo el codigo que este por encima de los require consumen gas
         //require(msg.value == 100000000000000000); // como cada ticket sale 0,1eth valido que lo que se esta enviendo es 0,1eth en weis
         // Se puede espesificar un sufijo para poner las denominaciones en Gwei o eth y que sean mas legibles:
-        require(msg.value == 0.1 ether); // como cada ticket sale 0,1eth valido que lo que se esta enviendo es 0,1eth en weis
+        require(msg.value == 0.1 ether, "The ticket cost 0.1eth"); // como cada ticket sale 0,1eth valido que lo que se esta enviendo es 0,1eth en weis
+        require(msg.sender != manager, "The manager cant participate"); // Desafio 1
 
         players.push(payable(msg.sender)); // tengo que convertir el address del sender en payable para poder pagarle (la casteo)
     }
