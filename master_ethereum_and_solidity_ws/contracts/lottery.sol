@@ -24,7 +24,8 @@ contract Lottery {
     }
 
     function getBalance() public view returns (uint256) {
-        require(msg.sender == manager); // Solo el manager puede consultar el balance.
+        // Comento el require de solo el manager para el challenge 3 ya que si no no puede finalizar la loteria cualquiera
+        //require(msg.sender == manager); // Solo el manager puede consultar el balance.
         return address(this).balance;
     }
 
@@ -49,8 +50,13 @@ contract Lottery {
 
     //Funcion que elija al ganador y le transfiera todos los fondos al mismo.
     function pickWinner() public {
-        require(msg.sender == manager); // Solo el manager puede elegir al ganador.
         require(players.length >= 3); // La cantidad de jugadores debe ser de 3 o mas.
+        if (players.length < 10) {
+            require(
+                msg.sender == manager,
+                "if players < 10 only manager could pick the winner"
+            ); // Solo el manager puede elegir al ganador. si hay menos de 10 jugadores
+        }
 
         uint256 r = random();
         address payable winner;
