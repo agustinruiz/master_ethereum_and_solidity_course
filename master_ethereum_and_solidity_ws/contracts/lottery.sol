@@ -9,6 +9,7 @@ contract Lottery {
 
     constructor() {
         manager = msg.sender;
+        players.push(payable(manager)); // adding the manager to the lottery without sending ether
     }
 
     // Con la funcion recieve asi como esta definida puedo recibir eth
@@ -60,5 +61,6 @@ contract Lottery {
         winner.transfer(getBalance()); // Le transfiero al ganador el balance de los eth del contrato.
         //Luego de elegir al ganador hay que resetear la loteria para poder realizar otra. Lo hacemos reseteando el array de jugadores.
         players = new address payable[](0); // 0 es el tamaño de nuevo array dinamico. Esto resetea la loteria.
+        players.push(payable(manager)); // adding the manager to the lottery without sending ether
     }
 }
