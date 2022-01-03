@@ -64,7 +64,15 @@ contract Lottery {
         uint256 index = r % players.length;
         winner = players[index];
 
-        winner.transfer(getBalance()); // Le transfiero al ganador el balance de los eth del contrato.
+        uint256 managerFee = (getBalance() * 10) / 100; // manager fee is 10%
+        uint256 winnerPrize = (getBalance() * 90) / 100; // winner prize is 90%
+
+        // transferring 90% of contract's balance to the winner
+        winner.transfer(winnerPrize);
+
+        // transferring 10% of contract's balance to the manager
+        payable(manager).transfer(managerFee);
+
         //Luego de elegir al ganador hay que resetear la loteria para poder realizar otra. Lo hacemos reseteando el array de jugadores.
         players = new address payable[](0); // 0 es el tamaño de nuevo array dinamico. Esto resetea la loteria.
         players.push(payable(manager)); // adding the manager to the lottery without sending ether
