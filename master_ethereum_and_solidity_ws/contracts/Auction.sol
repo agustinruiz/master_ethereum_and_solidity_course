@@ -55,4 +55,73 @@ contract Auction {
         ipfsHash = "";
         bidIncrement = 100;
     }
+
+    // not owner condition
+    modifier notOwner() {
+        require(msg.sender != owner);
+        _;
+    }
+
+    // after start condition
+    modifier afterStart() {
+        require(block.number >= startBlock);
+        _;
+    }
+
+    // before end condition
+    modifier beforeEnd() {
+        require(block.number <= endBlock);
+        _;
+    }
+
+    // In solidity there is no function that returns the minimum between two values. So we create it
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a <= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+
+    // when somewone wants to place a bid
+    // Modo de funcionamiento de la subasta:
+    /* 
+    El valor de venta va a estar dado por el segundo maximo apostador mas el bidIncrement. 
+    Esto quiere decir que la persona que mas apuesta no necesariamente va a gastor todo el 
+    capital ofertado sino que el incremento minimo + lo ofertado por el segundo maximo ofertador.
+    Ej: 
+    */
+    function placeBid() public payable notOwner afterStart beforeEnd {
+        // The auction must be in Running state
+        require(auctionState == State.Running);
+        // the bid must be grater than 100 weis
+        require(msg.value >= 100);
+
+        // Cero is the default value of any key in the mapping and also if the addres key does't exist
+        uint256 currentBid = bids[msg.sender] + msg.value;
+
+        // if the current bid is less than the highestBindingBid () the contract must stop because that is not allowed
+        require(currentBid > highestBindingBid);
+
+        // updating the bid of the sender
+        bids[msg.sender] = currentBid;
+
+        // if the current bid (previous bid + this bid) is less than the bid of the of the highest bidder:
+        if (currentBid <= bids[highestBidder]) {
+            // if the current bid (previous bid + this bid) is less than the bid of the of the highest bidder, I update
+            // the highestBindingBid with the minimum between the current bid + the increment and the highest bid.
+            highestBindingBid = min(
+                currentBid + bidIncrement,
+                bids[highestBidder]
+            );
+        } else {
+            // if the current bid (previous bid + this bid) is more than the bid of the of the highest bidder, I update
+            // the highestBindingBid with the minimum between the current bid and the highest bid + the increment.
+            highestBindingBid = min(
+                currentBid,
+                bids[highestBidder] + bidIncrement
+            );
+            highestBidder = payable(msg.sender);
+        }
+    }
 }
