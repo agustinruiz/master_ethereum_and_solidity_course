@@ -101,6 +101,7 @@ contract Auction {
         uint256 currentBid = bids[msg.sender] + msg.value;
 
         // if the current bid is less than the highestBindingBid () the contract must stop because that is not allowed
+        // you have to bid more than the actual price
         require(currentBid > highestBindingBid);
 
         // updating the bid of the sender
@@ -121,6 +122,7 @@ contract Auction {
                 currentBid,
                 bids[highestBidder] + bidIncrement
             );
+            // In this case we also update the highest bidder
             highestBidder = payable(msg.sender);
         }
     }
