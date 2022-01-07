@@ -62,6 +62,12 @@ contract Auction {
         _;
     }
 
+    // Only owner condition
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
     // after start condition
     modifier afterStart() {
         require(block.number >= startBlock);
@@ -125,5 +131,55 @@ contract Auction {
             // In this case we also update the highest bidder
             highestBidder = payable(msg.sender);
         }
+    }
+
+    // Cancelling the auction
+    // If a vulnerabilitty is found in the code, or anything bad happens the owner
+    // has the posibility to cancel the auction so that all the bidders can request back their founds
+    function cancelAuction() public onlyOwner {
+        auctionState = State.Canceled;
+    }
+
+    // Finalizing the Auction
+    function finalizeAuction() public {
+        // we could finalize the auction if the auction is canceled or the time expired (Auction ended)
+        require(auctionState == State.Canceled || block.number > endBlock);
+        // the auction could be finalized by the owner or any bidder
+        require(msg.sender == owner || bids[msg.sender] > 0); // "bids[msg.sender] > 0" mean only a bidder because just them could be in the bids mapping
+
+        address payable recipient;
+        uint256 value;
+
+        // two possibilities: either the auction was canceled for the owner and every bidder could reclaim the money they sent
+        // or the auction ended and the owner recieves the highest binding bid
+        if (auctionState == State.Canceled) {
+            // auction was cancelled
+            recipient = payable(msg.sender);
+            value = bids[msg.sender];
+        } else {
+            // Auction ended (not cancelled)
+            if (msg.sender == owner) {
+                // The owner comes to get his monney
+                recipient = owner;
+                value = highestBindingBid;
+            } else {
+                // The bidder want to claim his founds
+                if (msg.sender == highestBidder) {
+                    // the highest bidder is claming his founds
+                    recipient = highestBidder;
+                    value = bids[highestBidder] - highestBindingBid;
+                } else {
+                    // The rest of the bidders claiming
+                    recipient = payable(msg.sender);
+                    value = bids[msg.sender];
+                }
+            }
+        }
+
+        // So the recipient couldn't claim their founds more than once
+        bids[recipient] = 0; // Now the recipient isn't consider a bidder
+
+        // now we have to transfer the founds to the recipient
+        recipient.transfer(value);
     }
 }
