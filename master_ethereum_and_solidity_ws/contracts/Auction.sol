@@ -2,6 +2,17 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
+contract AuctionCreator {
+    Auction[] public auctions;
+
+    function crateAuction() public {
+        // We want that the owner of the new auction be the user who creates the auction not the address of the
+        // AuctionCreator contract. For that we have to pass the eoa(External owned address) who called this function.
+        Auction newAuction = new Auction(msg.sender);
+        auctions.push(newAuction);
+    }
+}
+
 contract Auction {
     address payable public owner;
     // IMPORTANTE: Las subastas requieren de un tiempo de inicio y fin. En solidity, el tiempo es tramposo ya que los timestamp de
@@ -38,8 +49,8 @@ contract Auction {
     // variable para guardar los incrementos de las ofertas
     uint256 bidIncrement;
 
-    constructor() {
-        owner = payable(msg.sender); // hay que convertir el sender en payable ya que el owner tiene que recibir eth
+    constructor(address eoa) {
+        owner = payable(eoa); // hay que convertir el sender en payable ya que el owner tiene que recibir eth
         auctionState = State.Running;
         // Por lo mencionado anteriormente como IMPORTANTE. Una buena practica es calcular el tiempo basandose en el numero de bloque.
         // Sabemos que, en ethereum, el tiempo entre bloque y bloque son 50 segundos (se crea un bloque y se añade a la blockchain
