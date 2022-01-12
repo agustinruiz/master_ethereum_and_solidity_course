@@ -60,4 +60,22 @@ contract CrowdFunding {
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
+
+    function getRefound() public {
+        // A contributer will be allowed to get a refound if two conditions are met:
+        // The deadline of th campaign has passed and the goal was not reached
+        require(block.timestamp > deadline && raisedAmount < goal);
+        // Only a contributer can call this function to get a refound.
+        require(contributors[msg.sender] > 0);
+
+        // to be more clarify
+        address payable recipient = payable(msg.sender);
+        uint256 value = contributors[msg.sender];
+        recipient.transfer(value);
+
+        // we could replace the previous 3 lines with:
+        //   payable(msg.sender).transfer(contributors[msg.sender]);
+
+        contributors[msg.sender] = 0;
+    }
 }
