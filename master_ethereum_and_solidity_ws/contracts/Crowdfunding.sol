@@ -27,6 +27,25 @@ contract CrowdFunding {
     // the total rised amount
     uint256 public raisedAmount;
 
+    // The info of the spending request will be stored in:
+    struct Request {
+        string description;
+        address payable recipient;
+        uint256 value;
+        bool completed; // if the request was approved by the contributers. the default value is foalse
+        uint256 noOfVoters;
+        mapping(address => bool) voters; // the vote of avery voter.
+    }
+
+    // for a campaign the admin could request more than one spending request
+    mapping(uint256 => Request) public requests;
+    // NOTE: we cannot store the requests in a dynamic array because in the latest versions of solidity
+    // asignments to array in storage not work if they contain mappings and the struct called Request
+    // has a field of type mapping (voters). That for we cannot have an array of requests.
+
+    // to hold the number of the requests
+    uint256 public numRequests;
+
     // Constructor. Arguments: the goal amount, the time that the crowdfunding will be active IN SECONDS.
     constructor(uint256 _goal, uint256 _deadline) {
         goal = _goal;
@@ -77,5 +96,31 @@ contract CrowdFunding {
         //   payable(msg.sender).transfer(contributors[msg.sender]);
 
         contributors[msg.sender] = 0;
+    }
+
+    // Creating and spending request
+    // The manager is not in full control of the money. He is just an administrator who only
+    // acts according to how the contributors tell him to. The power is translated from the admin
+    // to those who donated the money.
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can call this function!");
+        _;
+    }
+
+    function createRequest(
+        string memory _description,
+        address payable _recipient,
+        uint256 _value
+    ) public onlyAdmin {
+        // NOTE: the mappings must be declared in storage and Request have a nested mapping so i have to
+        // use the storage modifier to dont get an error.
+        Request storage newRequest = requests[numRequests]; // numRequests is 0 by default so the firs request will be in the index 0 position of the mapping
+        numRequests++; // Incrementing the index to make it ready to the next spending request.
+
+        newRequest.description = _description;
+        newRequest.recipient = _recipient;
+        newRequest.value = _value;
+        newRequest.completed = false;
+        newRequest.noOfVoters = 0;
     }
 }
