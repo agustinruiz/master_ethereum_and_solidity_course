@@ -19,7 +19,7 @@ contract CrowdFunding {
     // To save the administrator of the campaign
     address public admin;
     // the number the contributors
-    uint256 public numOfContributors;
+    uint256 public noOfContributors;
     // minimun contribution, deadline and the goal
     uint256 public minimumContribution;
     uint256 public deadline; // timestamp
@@ -44,7 +44,7 @@ contract CrowdFunding {
     // has a field of type mapping (voters). That for we cannot have an array of requests.
 
     // to hold the number of the requests
-    uint256 public numRequests;
+    uint256 public noRequests;
 
     // Constructor. Arguments: the goal amount, the time that the crowdfunding will be active IN SECONDS.
     constructor(uint256 _goal, uint256 _deadline) {
@@ -63,7 +63,7 @@ contract CrowdFunding {
 
         if (contributors[msg.sender] == 0) {
             // If the contributor doesn't contribute yet:
-            numOfContributors++;
+            noOfContributors++;
         }
 
         contributors[msg.sender] += msg.value;
@@ -114,8 +114,8 @@ contract CrowdFunding {
     ) public onlyAdmin {
         // NOTE: the mappings must be declared in storage and Request have a nested mapping so i have to
         // use the storage modifier to dont get an error.
-        Request storage newRequest = requests[numRequests]; // numRequests is 0 by default so the firs request will be in the index 0 position of the mapping
-        numRequests++; // Incrementing the index to make it ready to the next spending request.
+        Request storage newRequest = requests[noRequests]; // numRequests is 0 by default so the firs request will be in the index 0 position of the mapping
+        noRequests++; // Incrementing the index to make it ready to the next spending request.
 
         newRequest.description = _description;
         newRequest.recipient = _recipient;
@@ -141,5 +141,25 @@ contract CrowdFunding {
 
         thisRequest.voters[msg.sender] = true; // i mark that the contributor already voted
         thisRequest.noOfVoters++; // i increment the number of votes.
+    }
+
+    // making a payment function
+    // It will be called by the admin to transfer the money of the spending request to a supplier or
+    // to a vendor. This function can be called only after the admin has created a spending request
+    // and the contributors had voted for that request. In this example the votes must be more than %50
+    function makePayment(uint256 _requestNo) public onlyAdmin {
+        // The objetive amount must be reached
+        require(raisedAmount >= goal);
+        Request storage thisRequest = requests[_requestNo];
+        // the request doasnt have to be completed to pay for it. The admin hasnt already pay for it
+        require(
+            thisRequest.completed == false,
+            "The request has been completed"
+        );
+        // check if at least %50 of the contributors has voted for the request.
+        require(thisRequest.noOfVoters > noOfContributors / 2); // this means %50
+
+        thisRequest.recipient.transfer(thisRequest.value);
+        thisRequest.completed = true;
     }
 }
