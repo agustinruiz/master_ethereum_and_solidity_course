@@ -123,4 +123,23 @@ contract CrowdFunding {
         newRequest.completed = false;
         newRequest.noOfVoters = 0;
     }
+
+    function voteRequest(uint256 _requestNo) public {
+        // check if is a contributer
+        require(
+            contributors[msg.sender] > 0,
+            "You must be a contributor to vote!"
+        );
+        // picking from the request mapping the request the contributer vote for.
+        Request storage thisRequest = requests[_requestNo]; // I work direct on it and not in a copy
+
+        // contributers can vote on the request only once so i compere to false because it is the default
+        require(
+            thisRequest.voters[msg.sender] == false,
+            "You have already voted!"
+        );
+
+        thisRequest.voters[msg.sender] = true; // i mark that the contributor already voted
+        thisRequest.noOfVoters++; // i increment the number of votes.
+    }
 }
