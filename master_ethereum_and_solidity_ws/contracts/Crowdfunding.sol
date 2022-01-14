@@ -54,6 +54,17 @@ contract CrowdFunding {
         admin = msg.sender;
     }
 
+    // Creating an event to notify the frontend that there is a new contributor
+    event ContributeEvent(address _sender, uint256 _value);
+    // Creating an event to notify the frontend that there is a new request
+    event CreateRequestEvent(
+        string _description,
+        address _recipient,
+        uint256 _value
+    );
+    // Creating an event to notify the frontend that there is a new peyment
+    event MakePaymentEvent(address _recipient, uint256 _value);
+
     function contribute() public payable {
         require(block.timestamp <= deadline, "Deadline has passed!");
         require(
@@ -69,6 +80,9 @@ contract CrowdFunding {
         contributors[msg.sender] += msg.value;
 
         raisedAmount += msg.value;
+
+        // emitting the event
+        emit ContributeEvent(msg.sender, msg.value);
     }
 
     // para enviar fondos directamente a la direcicon del contrato, tenemos que declarar la funcion recieve
@@ -122,6 +136,9 @@ contract CrowdFunding {
         newRequest.value = _value;
         newRequest.completed = false;
         newRequest.noOfVoters = 0;
+
+        // emitting the event
+        emit CreateRequestEvent(_description, _recipient, _value);
     }
 
     function voteRequest(uint256 _requestNo) public {
@@ -161,5 +178,8 @@ contract CrowdFunding {
 
         thisRequest.recipient.transfer(thisRequest.value);
         thisRequest.completed = true;
+
+        // emitting the event
+        emit MakePaymentEvent(thisRequest.recipient, thisRequest.value);
     }
 }
