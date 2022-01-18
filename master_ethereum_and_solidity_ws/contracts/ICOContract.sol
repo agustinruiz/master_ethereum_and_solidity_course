@@ -181,4 +181,37 @@ contract CryptosICO is Cryptos{
         admin = msg.sender;
         icoState = State.beforeStart;
     }
+
+    
+    // requirements of the ICO
+
+    // the first requirement is that the admin coul stop the ICO in case of an emergency
+    modifier onlyAdmin(){
+        require(msg.sender == admin);
+        _;
+    }
+
+    function halt() public onlyAdmin{ // To stop the ICO get compromized or something happend
+        icoState = State.halted;
+    }
+
+    function resume() public onlyAdmin{ // To resume after the problem was solved
+        icoState = State.running;
+    }
+
+    function changeDepositAddress(address payable newDeposit) public onlyAdmin{ // To change the deposit address
+        deposit = newDeposit;
+    }
+
+    function getCurrentState() public view returns(State){ // To get the current state
+        if(icoState == State.halted){
+            return State.halted;
+        } else if(block.timestamp < saleStart){
+            return State.beforeStart;
+        } else if(block.timestamp >= saleStart && block.timestamp <= saleEnd){
+            return State.running;
+        } else{
+            return State.afterEnd;
+        }
+    }
 }
