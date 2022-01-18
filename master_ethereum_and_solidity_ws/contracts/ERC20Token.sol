@@ -20,6 +20,7 @@ interface ERC20Interface {
         external
         returns (bool success);
 
+    /*
     function allowance(address tokenOwner, address spender)
         external
         view
@@ -34,16 +35,19 @@ interface ERC20Interface {
         address to,
         uint256 tokens
     ) external returns (bool success);
-
+*/
     event Transfer(address indexed from, address indexed to, uint256 tokens);
+    /*
     event Approval(
         address indexed tokenOwner,
         address indexed spender,
         uint256 tokens
     );
+*/
 }
 
 contract Cryptos is ERC20Interface {
+    // When we declear a public state variable a getter function is automatically created. So that getter functions complete the contract functions.
     string public name = "Cryptos"; // Standar variable that contains the name
     string public symbol = "CRPT"; // Standar variable that contains the symbol of the coin
     uint256 public decimals = 0; // decimals. how divisible a token can be. 18 is the most used number.
@@ -52,4 +56,34 @@ contract Cryptos is ERC20Interface {
     address public founder; // the address who deploys the contract and posess all the tokens.
 
     mapping(address => uint256) public balances; // the number of tokens of each address. The default value of any address will be 0
+
+    constructor() {
+        totalSupply = 1000000;
+        founder = msg.sender;
+        balances[founder] = totalSupply;
+    }
+
+    function balanceOf(address tokenOwner)
+        public
+        view
+        override
+        returns (uint256 balance)
+    {
+        return balances[tokenOwner];
+    }
+
+    function transfer(address to, uint256 tokens)
+        public
+        override
+        returns (bool success)
+    {
+        require(balances[msg.sender] >= tokens); // Check if the sender have enaugh tokens
+        // Updating the balances
+        balances[to] += tokens;
+        balances[msg.sender] -= tokens;
+        // sending the event
+        emit Transfer(msg.sender, to, tokens);
+
+        return true;
+    }
 }
