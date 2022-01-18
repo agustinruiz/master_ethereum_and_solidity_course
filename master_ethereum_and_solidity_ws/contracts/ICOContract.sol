@@ -142,7 +142,7 @@ contract Cryptos is ERC20Interface {
 }
 
 // The recommended aproach to create a ICO smart contract is to derive the contract from the ERC20 smart contract.
-contract CryptosICO is Cryptos{
+contract CryptosICO is Cryptos {
     // the admin that can stop the ICO if there is an emergency or can change the deposit address if it gets compromized
     address public admin;
     // the address that gets transfer to the ethers send to the contract.
@@ -151,67 +151,105 @@ contract CryptosICO is Cryptos{
     address payable public deposit;
 
     // the token price
-    uint tokenPrice = 0.001 ether; // 1 ETH = 1000 CRPT
+    uint256 tokenPrice = 0.001 ether; // 1 ETH = 1000 CRPT
     // maximum amount of ether
-    uint public hardCap = 300 ether;
+    uint256 public hardCap = 300 ether;
     // variable that holds the total amount of ether sent to the ICO
-    uint public raisedAmount;
+    uint256 public raisedAmount;
     // start of the ICO
-    uint public saleStart = block.timestamp; // in this example the start time is the time when the contract is deplyed. right away.
+    uint256 public saleStart = block.timestamp; // in this example the start time is the time when the contract is deplyed. right away.
     // If i have to start the ICO in one hour:
     // uint public saleStart = block.timestamp + 3600;
     // End of the ICO
-    uint public saleEnd = block.timestamp + 604800; // the ICO ends in 1 week
+    uint256 public saleEnd = block.timestamp + 604800; // the ICO ends in 1 week
 
     // It is common in an ICO to lock the tokens for an amount of time.
     // I want the tokens to be transferable only after a time after the ICO ends so that the early investors cannot dump
     // the tokens on the market causing the price to collapse.
-    uint public tokenTradeStart = saleEnd + 604800; // tokens will be transferable in a week after sale ends
+    uint256 public tokenTradeStart = saleEnd + 604800; // tokens will be transferable in a week after sale ends
 
     // Maximum and minimum investment of an address
-    uint public maxInvestment = 5 ether;
-    uint public minInvestment = 0.1 ether;
+    uint256 public maxInvestment = 5 ether;
+    uint256 public minInvestment = 0.1 ether;
 
     // The possible states of the ICO
-    enum State {beforeStart, running, afterEnd, halted};
+    enum State {
+        beforeStart,
+        running,
+        afterEnd,
+        halted
+    }
     State public icoState;
 
-    constructor(address payable _deposit){
+    constructor(address payable _deposit) {
         deposit = _deposit;
         admin = msg.sender;
         icoState = State.beforeStart;
     }
 
-    
     // requirements of the ICO
 
     // the first requirement is that the admin coul stop the ICO in case of an emergency
-    modifier onlyAdmin(){
+    modifier onlyAdmin() {
         require(msg.sender == admin);
         _;
     }
 
-    function halt() public onlyAdmin{ // To stop the ICO get compromized or something happend
+    function halt() public onlyAdmin {
+        // To stop the ICO get compromized or something happend
         icoState = State.halted;
     }
 
-    function resume() public onlyAdmin{ // To resume after the problem was solved
+    function resume() public onlyAdmin {
+        // To resume after the problem was solved
         icoState = State.running;
     }
 
-    function changeDepositAddress(address payable newDeposit) public onlyAdmin{ // To change the deposit address
+    function changeDepositAddress(address payable newDeposit) public onlyAdmin {
+        // To change the deposit address
         deposit = newDeposit;
     }
 
-    function getCurrentState() public view returns(State){ // To get the current state
-        if(icoState == State.halted){
+    function getCurrentState() public view returns (State) {
+        // To get the current state
+        if (icoState == State.halted) {
             return State.halted;
-        } else if(block.timestamp < saleStart){
+        } else if (block.timestamp < saleStart) {
             return State.beforeStart;
-        } else if(block.timestamp >= saleStart && block.timestamp <= saleEnd){
+        } else if (block.timestamp >= saleStart && block.timestamp <= saleEnd) {
             return State.running;
-        } else{
+        } else {
             return State.afterEnd;
         }
+    }
+
+    // event to inform an invest
+    event Invest(address investor, uint256 value, uint256 tokens);
+
+    // Primary function of the smart contract
+    function invest() public payable returns (bool) {
+        icoState = getCurrentState();
+        require(icoState == State.running);
+
+        require(msg.value >= minInvestment && msg.value <= maxInvestment);
+        raisedAmount += msg.value;
+        require(raisedAmount <= hardCap);
+
+        // Calculating the number of tokens the nvestor will get for the ether he has just send
+        uint256 tokens = msg.value / tokenPrice;
+
+        // updating the tokens balances
+        balances[msg.sender] += tokens;
+        balances[founder] -= tokens;
+        // transfering the eth to the deposit address
+        deposit.transfer(msg.value);
+        // Finally i am emitting an event wich is a log message written to the blockchain that can be process by frontends.
+        emit Invest(msg.sender, msg.value, tokens);
+        return true;
+    }
+
+    // To recieve invests when the investor sen eth directly to the contract i must declare the recieve function
+    receive() external payable {
+        invest();
     }
 }
