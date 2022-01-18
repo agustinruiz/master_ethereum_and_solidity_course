@@ -77,9 +77,12 @@ contract Cryptos is ERC20Interface {
 
     function transfer(address to, uint256 tokens)
         public
+        virtual
         override
         returns (bool success)
     {
+        // Adding virtual keyword to override it on the ICO contract and add the locking feature
+        // Virtual means that the function can change its behaiviour in derives contracts by overriding
         require(balances[msg.sender] >= tokens); // Check if the sender have enaugh tokens
         // Updating the balances
         balances[to] += tokens;
@@ -125,7 +128,9 @@ contract Cryptos is ERC20Interface {
         address from,
         address to,
         uint256 tokens
-    ) public override returns (bool success) {
+    ) public virtual override returns (bool success) {
+        // Adding virtual keyword to override it on the ICO contract and add the locking feature
+        // Virtual means that the function can change its behaiviour in derives contracts by overriding
         // Check if the allowance of the current user is grater than or equal to the number of tokens he wants to transfer
         require(allowed[from][to] >= tokens);
         // Cheking that the balance of the owner is grater than o equals to the number of tokens to be transfer.
@@ -251,5 +256,34 @@ contract CryptosICO is Cryptos {
     // To recieve invests when the investor sen eth directly to the contract i must declare the recieve function
     receive() external payable {
         invest();
+    }
+
+    function transfer(address to, uint256 tokens)
+        public
+        override
+        returns (bool success)
+    {
+        // making the aditional chacks for the transfer
+        require(block.timestamp > tokenTradeStart); // Check if the lockup period passed
+        // Calling the original transfer function
+        Cryptos.transfer(to, tokens);
+        // another way to do it is:
+        // super.transfer(to, tokens);
+        return true;
+    }
+
+    // transferFrom allows the spender to spend tokens of the owner multiple times until the total of tokens allowed
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokens
+    ) public override returns (bool success) {
+        // making the aditional chacks for the transfer
+        require(block.timestamp > tokenTradeStart); // Check if the lockup period passed
+        // Calling the original transfer function
+        Cryptos.transferFrom(from, to, tokens);
+        // another way to do it is:
+        // super.transferFrom(from, to, tokens);
+        return true;
     }
 }
